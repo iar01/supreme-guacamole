@@ -1,0 +1,28 @@
+{% load i18n %}
+
+{% block subject %}
+    {% blocktrans %}Hi {{ name }} you have booked a room!{% endblocktrans %}
+{% endblock subject %}
+
+{% block html_body %}
+    <div style="font-family: Arial, sans-serif;">
+        <h2>{% blocktrans %}Booking Details{% endblocktrans %}</h2>
+
+        <div style="margin-bottom: 15px;">
+            <p><strong>{% blocktrans %}Room Name{% endblocktrans %}:</strong> {{ room_name }}</p>
+            <p><strong>{% blocktrans %}Room Number{% endblocktrans %}:</strong> {{ room_number }}</p>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <p><strong>{% blocktrans %}Floor{% endblocktrans %}:</strong> {{ floor }}</p>
+            <p><strong>{% blocktrans %}Building{% endblocktrans %}:</strong> {{ building }}</p>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <p><strong>{% blocktrans %}Start Time{% endblocktrans %}:</strong> {{ start_time }}</p>
+            <p><strong>{% blocktrans %}End Time{% endblocktrans %}:</strong> {{ end_time }}</p>
+        </div>
+
+        <p>{% trans "Thanks for using our site!" %}</p>
+    </div>
+{% endblock html_body %}

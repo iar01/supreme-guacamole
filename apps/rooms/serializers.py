@@ -16,8 +16,15 @@ class FloorSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class TimeSlot(serializers.ModelSerializer):
+    class Meta:
+        model = TimeSlot
+        fields = '__all__'
+
+
 class RoomSerializer(serializers.ModelSerializer):
     floor = FloorSerializer()
+    booked_slots = TimeSlot(many=True)
 
     class Meta:
         model = Room

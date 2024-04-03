@@ -1,10 +1,13 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Building, Floor, Room, Booking
+from .models import Building, Floor, Room, Booking, TimeSlot
 from .serializers import BuildingSerializer, FloorSerializer, RoomSerializer, BookingSerializer
 from datetime import timedelta
 from django.shortcuts import get_object_or_404
+from django.template.loader import get_template
+from django.core.mail import EmailMultiAlternatives
+import datetime  # Make sure this is imported
 
 
 class BuildingList(APIView):
@@ -137,16 +140,44 @@ class BookingList(APIView):
     def post(self, request):
         serializer = BookingSerializer(data=request.data)
         if serializer.is_valid():
+
             if not self.check_booking_availability(serializer.validated_data):
                 return Response({"error": "Room not available for the selected time."},
                                 status=status.HTTP_400_BAD_REQUEST)
 
-            room = get_object_or_404(Room, pk=serializer.validated_data['room'].id)  # Get room object
+            room = get_object_or_404(Room, pk=serializer.validated_data['room'].id)
             room.is_booked = True
+
             room.save()
             serializer.save()
+            email = serializer.data['Email']
+            name = serializer.data['name']
+            room_name = room.room_name
+            room_number = room.room_number
+            floor = room.floor.floor_name
+            building = room.floor.building.name
+            start_time = serializer.data['start_time']
+            end_time = serializer.data['end_time']
+            htmly = get_template('booking.html')
+
+            start_time_dt = datetime.datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%SZ')  # Adjust format if needed
+            end_time_dt = datetime.datetime.strptime(end_time, '%Y-%m-%dT%H:%M:%SZ')  # Adjust format if needed
+            timeslot = TimeSlot.objects.create(start_time=start_time, end_time=end_time, date=start_time_dt)
+            room.booked_slots.add(timeslot)
+            room.save()
+            # Format the datetime objects
+            formatted_start_time = start_time_dt.strftime("%B %d, %Y %I:%M %p")
+            formatted_end_time = end_time_dt.strftime("%B %d, %Y %I:%M %p")
+
+            data = {'name': name, "room_name": room_name, "room_number": room_number, "floor": floor,
+                    "building": building, "start_time": formatted_start_time, "end_time": formatted_end_time}
+            subject, from_email, to = f"Hi {name}, you have booked a room", 'test@gmail.com', email
+            html_content = htmly.render(data)
+            msg = EmailMultiAlternatives(
+                subject, html_content, from_email, [to])
+            msg.attach_alternative(html_content, "text/html")
+            # msg.send()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def check_booking_availability(self, booking_data):
